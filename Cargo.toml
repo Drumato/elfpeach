@@ -1,0 +1,13 @@
+[package]
+name = "peachelf"
+version = "0.1.0"
+authors = ["Drumato <drumatech109@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tui = "0.11.0"
+termion = "1.5"
+rand = "0.7.3"
+elf-utilities = "0.1.59"
