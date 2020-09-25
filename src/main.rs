@@ -1,9 +1,10 @@
-mod tui_util;
 mod header_widget;
+mod tui_util;
 
-use tui_util::{Events, TabsState};
+use crate::tui_util::Event;
 use std::{error::Error, io};
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
+use tui::widgets::Paragraph;
 use tui::{
     backend::TermionBackend,
     layout::{Constraint, Direction, Layout},
@@ -12,15 +13,14 @@ use tui::{
     widgets::{Block, Borders, Tabs},
     Terminal,
 };
-use crate::tui_util::Event;
-use tui::widgets::Paragraph;
+use tui_util::{Events, TabsState};
 
 struct App<'a> {
     tabs: TabsState<'a>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args : Vec<String> = std::env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
 
     if args.len() != 2 {
         eprintln!("usage: ./peachelf <file-path>");
@@ -69,7 +69,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 })
                 .collect();
             let tabs = Tabs::new(titles)
-                .block(Block::default().borders(Borders::ALL).title(args[1].to_string()))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(args[1].to_string()),
+                )
                 .select(app.tabs.index)
                 .style(Style::default().fg(Color::Cyan))
                 .highlight_style(
@@ -81,8 +85,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             let inner = match app.tabs.index {
                 0 => header_widget::header_paragraph(&elf_file),
-                1 => Paragraph::new(vec![]).block(Block::default().title("Sections").borders(Borders::ALL)),
-                2 => Paragraph::new(vec![]).block(Block::default().title("Segments").borders(Borders::ALL)),
+                1 => Paragraph::new(vec![])
+                    .block(Block::default().title("Sections").borders(Borders::ALL)),
+                2 => Paragraph::new(vec![])
+                    .block(Block::default().title("Segments").borders(Borders::ALL)),
                 _ => unreachable!(),
             };
             f.render_widget(inner, chunks[1]);
@@ -101,4 +107,3 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
-
