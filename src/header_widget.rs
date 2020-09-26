@@ -3,7 +3,7 @@ use tui::widgets::{Block, Borders, Paragraph};
 
 use elf_utilities::{file, header, symbol};
 
-pub fn header_paragraph(elf_file: &file::ELF64) -> Paragraph {
+pub fn header_paragraphs(elf_file: &file::ELF64) -> Paragraph {
     Paragraph::new(vec![
         header_attribute_spans("Class", elf_class_string, elf_file.ehdr.get_class()),
         header_attribute_spans("Data", elf_data_string, elf_file.ehdr.get_data()),
@@ -58,7 +58,10 @@ pub fn header_paragraph(elf_file: &file::ELF64) -> Paragraph {
         ]),
         Spans::from(vec![
             Span::raw("Section header string table index: "),
-            Span::raw(format!("{} ({})", elf_file.ehdr.e_shstrndx, elf_file.sections[elf_file.ehdr.e_shstrndx as usize].name)),
+            Span::raw(format!(
+                "{} ({})",
+                elf_file.ehdr.e_shstrndx, elf_file.sections[elf_file.ehdr.e_shstrndx as usize].name
+            )),
         ]),
     ])
     .block(Block::default().title("Header").borders(Borders::ALL))

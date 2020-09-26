@@ -1,6 +1,6 @@
 # peachelf
 
-![sample.png](./sample.png)
+![sample.gif](./sample.gif)
 
 An TUI based elf analyzer
 

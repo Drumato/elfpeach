@@ -1,10 +1,13 @@
 mod header_widget;
+mod section_widget;
 mod tui_util;
 
-use crate::tui_util::Event;
+use crate::tui_util::{Event, StatefulList};
+use elf_utilities::file;
+use std::cell::RefCell;
 use std::{error::Error, io};
+use termion::raw::RawTerminal;
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
-use tui::widgets::Paragraph;
 use tui::{
     backend::TermionBackend,
     layout::{Constraint, Direction, Layout},
@@ -17,6 +20,9 @@ use tui_util::{Events, TabsState};
 
 struct App<'a> {
     tabs: TabsState<'a>,
+    items: RefCell<StatefulList<&'a str>>,
+    terminal:
+        RefCell<Terminal<TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<io::Stdout>>>>>>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -30,22 +36,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let elf_file = elf_utilities::parser::read_elf64(&args[1])?;
 
     // Terminal initialization
-    let stdout = io::stdout().into_raw_mode()?;
-    let stdout = MouseTerminal::from(stdout);
-    let stdout = AlternateScreen::from(stdout);
-    let backend = TermionBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
     let events = Events::new();
 
-    // App
-    let mut app = App {
-        tabs: TabsState::new(vec!["Header", "Sections", "Segments"]),
-    };
+    // Application initialization
+    let mut app = initialize_application(&elf_file)?;
+    app.items.borrow_mut().previous();
+    app.items.borrow_mut().previous();
 
     // Main loop
     loop {
-        terminal.draw(|f| {
+        app.terminal.borrow_mut().draw(|f| {
             let size = f.size();
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -83,15 +83,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                 );
             f.render_widget(tabs, chunks[0]);
 
-            let inner = match app.tabs.index {
-                0 => header_widget::header_paragraph(&elf_file),
-                1 => Paragraph::new(vec![])
-                    .block(Block::default().title("Sections").borders(Borders::ALL)),
-                2 => Paragraph::new(vec![])
-                    .block(Block::default().title("Segments").borders(Borders::ALL)),
+            match app.tabs.index {
+                0 => {
+                    let inner = header_widget::header_paragraphs(&elf_file);
+                    f.render_widget(inner, chunks[1]);
+                }
+                1 => {
+                    let inner = section_widget::section_list(&elf_file);
+                    f.render_stateful_widget(inner, chunks[1], &mut app.items.borrow_mut().state);
+                }
                 _ => unreachable!(),
-            };
-            f.render_widget(inner, chunks[1]);
+            }
         })?;
 
         if let Event::Input(input) = events.next()? {
@@ -101,9 +103,27 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Key::Right => app.tabs.next(),
                 Key::Left => app.tabs.previous(),
+                Key::Up => app.items.borrow_mut().next(),
+                Key::Down => app.items.borrow_mut().previous(),
                 _ => {}
             }
         }
     }
     Ok(())
+}
+
+fn initialize_application(elf_file: &file::ELF64) -> Result<App, Box<dyn std::error::Error>> {
+    let stdout = io::stdout().into_raw_mode()?;
+    let stdout = MouseTerminal::from(stdout);
+    let stdout = AlternateScreen::from(stdout);
+    let backend = TermionBackend::new(stdout);
+    let terminal = Terminal::new(backend)?;
+
+    Ok(App {
+        tabs: TabsState::new(vec!["Header", "Sections", "Segments"]),
+        items: RefCell::new(StatefulList::with_items(section_widget::section_names(
+            elf_file,
+        ))),
+        terminal: RefCell::new(terminal),
+    })
 }
