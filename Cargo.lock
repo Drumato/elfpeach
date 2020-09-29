@@ -36,13 +36,23 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "elf-utilities"
-version = "0.1.62"
+version = "0.1.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67044824699454e7bef9e139be5aa2adfe21312a41c26dfc557f50d0731875ad"
+checksum = "58dff15bfa4489d16f9473d5239f37d720195c757821596ae4d1f7f57a470db5"
 dependencies = [
  "bincode",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "elfpeach"
+version = "0.1.0"
+dependencies = [
+ "elf-utilities",
+ "rand",
+ "termion",
+ "tui",
 ]
 
 [[package]]
@@ -67,16 +77,6 @@ name = "numtoa"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8f8bdf33df195859076e54ab11ee78a1b208382d3a26ec40d142ffc1ecc49ef"
-
-[[package]]
-name = "peachelf"
-version = "0.1.0"
-dependencies = [
- "elf-utilities",
- "rand",
- "termion",
- "tui",
-]
 
 [[package]]
 name = "ppv-lite86"

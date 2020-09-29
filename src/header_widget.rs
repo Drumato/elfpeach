@@ -3,7 +3,7 @@ use tui::widgets::{Block, Borders, Paragraph};
 
 use elf_utilities::{file, header, symbol};
 
-pub fn header_paragraphs(elf_file: &file::ELF64) -> Paragraph {
+pub fn header_information(elf_file: &file::ELF64) -> Paragraph {
     Paragraph::new(vec![
         header_attribute_spans("Class", elf_class_string, elf_file.ehdr.get_class()),
         header_attribute_spans("Data", elf_data_string, elf_file.ehdr.get_data()),

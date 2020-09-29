@@ -1,5 +1,5 @@
 [package]
-name = "peachelf"
+name = "elfpeach"
 version = "0.1.0"
 authors = ["Drumato <drumatech109@gmail.com>"]
 edition = "2018"
@@ -10,4 +10,4 @@ edition = "2018"
 tui = "0.11.0"
 termion = "1.5"
 rand = "0.7.3"
-elf-utilities = "0.1.62"
+elf-utilities = "0.1.64"
