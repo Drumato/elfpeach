@@ -11,7 +11,7 @@ An TUI based elf analyzer
   - [x] each section information
     - ex. symbol table's relative string table
   - [ ] hexdump
-- [ ] program header table
+- [x] program header table
 - [ ] symbols
 - [ ] dymanic information
 - [ ] relocation symbols

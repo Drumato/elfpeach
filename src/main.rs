@@ -10,6 +10,7 @@ use tui::Terminal;
 
 mod header_widget;
 mod section_widget;
+mod segment_widget;
 mod tui_util;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -32,8 +33,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Application initialization
     let mut app = App::new(&elf_file);
-    app.items.borrow_mut().previous();
-    app.items.borrow_mut().previous();
+    app.sections.borrow_mut().previous();
+    app.sections.borrow_mut().previous();
+    app.segments.borrow_mut().previous();
+    // app.segments.borrow_mut().previous();
 
     // Main loop
     loop {
@@ -46,8 +49,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Key::Right => app.tabs.next(),
                 Key::Left => app.tabs.previous(),
-                Key::Up => app.items.borrow_mut().next(),
-                Key::Down => app.items.borrow_mut().previous(),
+                Key::Up => match app.tabs.index {
+                    1 => app.sections.borrow_mut().next(),
+                    2 => app.segments.borrow_mut().previous(),
+                    _ => {}
+                },
+                Key::Down => match app.tabs.index {
+                    1 => app.sections.borrow_mut().previous(),
+                    2 => app.segments.borrow_mut().next(),
+                    _ => {}
+                },
                 _ => {}
             }
         }

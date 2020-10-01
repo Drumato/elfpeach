@@ -1,5 +1,7 @@
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
+use tui::style::{Color, Style};
+use tui::text::{Span, Spans};
 use tui::widgets::ListState;
 
 #[derive(Clone)]
@@ -53,14 +55,26 @@ impl Iterator for SinSignal {
 }
 
 pub struct TabsState<'a> {
-    pub titles: Vec<&'a str>,
+    pub titles: Vec<Spans<'a>>,
     pub index: usize,
 }
 
 #[allow(dead_code)]
 impl<'a> TabsState<'a> {
     pub fn new(titles: Vec<&'a str>) -> TabsState {
-        TabsState { titles, index: 0 }
+        TabsState {
+            titles: titles
+                .iter()
+                .map(|t| {
+                    let (first, rest) = t.split_at(1);
+                    Spans::from(vec![
+                        Span::styled(first, Style::default().fg(Color::Yellow)),
+                        Span::styled(rest, Style::default().fg(Color::Green)),
+                    ])
+                })
+                .collect(),
+            index: 0,
+        }
     }
     pub fn next(&mut self) {
         self.index = (self.index + 1) % self.titles.len();
