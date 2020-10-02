@@ -12,9 +12,10 @@ An TUI based elf analyzer
     - ex. symbol table's relative string table
   - [ ] hexdump
 - [x] program header table
-- [ ] symbols
+- [x] symbols
 - [ ] dymanic information
 - [ ] relocation symbols
+- [ ] Filter by attribute
 
 ## Usage
 

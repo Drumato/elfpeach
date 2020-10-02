@@ -14,16 +14,23 @@ pub fn section_list(elf_file: &file::ELF64) -> List {
                 .bg(Color::LightGreen)
                 .add_modifier(Modifier::BOLD),
         )
-        .start_corner(Corner::BottomLeft)
+        .start_corner(Corner::TopLeft)
 }
 
-pub fn section_names<'a>(elf_file: &'a file::ELF64) -> Vec<&'a str> {
-    elf_file
+pub fn section_names(elf_file: &file::ELF64) -> Vec<String> {
+    let names=  elf_file
         .sections
         .iter()
-        .rev()
-        .map(|sct| sct.name.as_str())
-        .collect()
+        .enumerate()
+        .map(|(i, sct)|
+            if sct.name.is_empty(){
+                format!("NO NAME SECTION{}", i)
+            } else {
+                sct.name.to_string()
+            }
+        ).collect();
+
+    names
 }
 
 pub fn section_information<'a>(
@@ -225,6 +232,6 @@ fn sct_flag_string(sct_flag: u64) -> String {
 fn section_items(elf_file: &file::ELF64) -> Vec<ListItem> {
     section_names(elf_file)
         .iter()
-        .map(|name| ListItem::new(vec![Spans::from(vec![Span::raw(*name)])]))
+        .map(|name| ListItem::new(vec![Spans::from(vec![Span::raw(name.to_string())])]))
         .collect()
 }

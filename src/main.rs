@@ -12,6 +12,7 @@ mod header_widget;
 mod section_widget;
 mod segment_widget;
 mod tui_util;
+mod symbol_widget;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
@@ -34,9 +35,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Application initialization
     let mut app = App::new(&elf_file);
     app.sections.borrow_mut().previous();
-    app.sections.borrow_mut().previous();
     app.segments.borrow_mut().previous();
-    // app.segments.borrow_mut().previous();
+    app.symbol_table.borrow_mut().previous();
 
     // Main loop
     loop {
@@ -50,13 +50,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Key::Right => app.tabs.next(),
                 Key::Left => app.tabs.previous(),
                 Key::Up => match app.tabs.index {
-                    1 => app.sections.borrow_mut().next(),
+                    1 => app.sections.borrow_mut().previous(),
                     2 => app.segments.borrow_mut().previous(),
+                    3 => app.symbol_table.borrow_mut().previous(),
                     _ => {}
                 },
                 Key::Down => match app.tabs.index {
-                    1 => app.sections.borrow_mut().previous(),
+                    1 => app.sections.borrow_mut().next(),
                     2 => app.segments.borrow_mut().next(),
+                    3 => app.symbol_table.borrow_mut().next(),
                     _ => {}
                 },
                 _ => {}

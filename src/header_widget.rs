@@ -145,7 +145,7 @@ fn elf_entry_string(elf_file: &file::ELF64) -> String {
     let symbol_table = symbol_table.unwrap();
     for sym in symbol_table.symbols.as_ref().unwrap() {
         if sym.st_value == elf_file.ehdr.e_entry {
-            if sym.symbol_name.is_none() || sym.get_type() != symbol::STT_FUNC {
+            if sym.symbol_name.is_none() || sym.get_type() != symbol::TYPE::FUNC {
                 continue;
             }
             return format!("{} ({})", sym.symbol_name.as_ref().unwrap(), entry_point);

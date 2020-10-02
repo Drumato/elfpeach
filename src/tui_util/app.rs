@@ -1,9 +1,9 @@
 use std::cell::RefCell;
 
 use crate::tui_util::{StatefulList, TabsState};
-use crate::{header_widget, section_widget, segment_widget};
+use crate::{header_widget, section_widget, segment_widget, symbol_widget};
 
-use elf_utilities::file;
+use elf_utilities::{file};
 use tui::backend::Backend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
@@ -12,8 +12,9 @@ use tui::Frame;
 
 pub struct App<'a> {
     pub tabs: TabsState<'a>,
-    pub sections: RefCell<StatefulList<&'a str>>,
+    pub sections: RefCell<StatefulList<String>>,
     pub segments: RefCell<StatefulList<String>>,
+    pub symbol_table: RefCell<StatefulList<String>>,
 }
 
 impl<'a> App<'a> {
@@ -49,7 +50,8 @@ impl<'a> App<'a> {
             0 => self.draw_header_tab(frame, &elf_file, chunks[1]),
             1 => self.draw_section_tab(frame, &elf_file, chunks[1]),
             2 => self.draw_segment_tab(frame, &elf_file, chunks[1]),
-            _ => unreachable!(),
+            3 => self.draw_symbol_tab(frame, &elf_file, chunks[1]),
+            _ => {},
         }
     }
 
@@ -73,11 +75,10 @@ impl<'a> App<'a> {
         let scts = section_widget::section_list(&elf_file);
         let selected_sct = self.sections.borrow().state.selected().unwrap();
 
-        let selected_sct_name = self.sections.borrow().items[selected_sct];
         frame.render_stateful_widget(scts, chunks[0], &mut self.sections.borrow_mut().state);
 
-        let selected_sct = elf_file.first_section_by(|sct| sct.name == selected_sct_name);
-        let sct_info = section_widget::section_information(elf_file, selected_sct.unwrap());
+        let selected_sct = &elf_file.sections[selected_sct];
+        let sct_info = section_widget::section_information(elf_file, selected_sct);
         frame.render_widget(sct_info, chunks[1]);
     }
     fn draw_segment_tab<B: Backend>(
@@ -91,12 +92,25 @@ impl<'a> App<'a> {
         let segs = segment_widget::segment_list(&elf_file);
         let selected_seg = self.segments.borrow().state.selected().unwrap();
 
-        // let selected_seg_name = &self.segments.borrow().items[selected_seg];
         frame.render_stateful_widget(segs, chunks[0], &mut self.segments.borrow_mut().state);
 
         let selected_seg = elf_file.segments[selected_seg];
         let seg_info = segment_widget::segment_information(&selected_seg);
         frame.render_widget(seg_info, chunks[1]);
+    }
+    fn draw_symbol_tab<B: Backend>(
+        &mut self,
+        frame: &mut Frame<B>,
+        elf_file: &'a file::ELF64,
+        area: Rect,
+    ) {
+        let chunks = self.split_list_and_detail(area);
+
+        let symbols = symbol_widget::symbol_table_list(&elf_file);
+        frame.render_stateful_widget(symbols, chunks[0], &mut self.symbol_table.borrow_mut().state);
+
+        let sym_info = symbol_widget::symbol_information(elf_file, self.symbol_table.borrow().state.selected().unwrap());
+        frame.render_widget(sym_info, chunks[1]);
     }
     fn split_list_and_detail(&self, area: Rect) -> Vec<Rect> {
         Layout::default()
@@ -107,13 +121,16 @@ impl<'a> App<'a> {
 
     pub fn new(elf_file: &'a file::ELF64) -> Self {
         Self {
-            tabs: TabsState::new(vec!["Header", "Sections", "Segments"]),
-            sections: RefCell::new(StatefulList::with_items(section_widget::section_names(
-                elf_file,
-            ))),
+            tabs: TabsState::new(vec!["Header", "Sections", "Segments", "Symbols"]),
+            sections: {
+                RefCell::new(StatefulList::with_items(section_widget::section_names(
+                    elf_file,
+                )))
+            },
             segments: RefCell::new(StatefulList::with_items(
                 (0..elf_file.ehdr.e_phnum).map(|n| n.to_string()).collect(),
             )),
+            symbol_table: RefCell::new(StatefulList::with_items(symbol_widget::symbol_names(elf_file))),
         }
     }
 }
