@@ -56,6 +56,7 @@ impl Iterator for SinSignal {
 
 pub struct TabsState<'a> {
     pub titles: Vec<Spans<'a>>,
+    pub current: String,
     pub index: usize,
 }
 
@@ -66,18 +67,21 @@ impl<'a> TabsState<'a> {
             titles: titles
                 .iter()
                 .map(|t| {
-                    let (first, rest) = t.split_at(1);
-                    Spans::from(vec![
-                        Span::styled(first, Style::default().fg(Color::Yellow)),
-                        Span::styled(rest, Style::default().fg(Color::Green)),
-                    ])
+                    Self::styled_tab(t)
                 })
                 .collect(),
             index: 0,
+            current: titles[0].to_string(),
         }
+    }
+    pub fn push(&mut self, title: &'a str){
+        self.titles.push(
+            Self::styled_tab(title),
+        )
     }
     pub fn next(&mut self) {
         self.index = (self.index + 1) % self.titles.len();
+        self.current = self.titles[self.index].0[0].content.to_string();
     }
 
     pub fn previous(&mut self) {
@@ -86,6 +90,13 @@ impl<'a> TabsState<'a> {
         } else {
             self.index = self.titles.len() - 1;
         }
+        self.current = self.titles[self.index].0[0].content.to_string();
+    }
+
+    fn styled_tab(title: &'a str) -> Spans<'a> {
+        Spans::from(vec![
+            Span::styled(title, Style::default().fg(Color::Green)),
+        ])
     }
 }
 

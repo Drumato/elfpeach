@@ -27,6 +27,6 @@ cargo run <file-path>
 
 |  key  |  description  |
 | ---- | ---- |
-|  `q`  |  quit  |
+|  `q/Esc`  |  quit  |
 |  `←/→`  |  change attribute  |
 |  `↑/↓`  |  change section/segment/symbol  |

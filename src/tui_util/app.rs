@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use crate::tui_util::{StatefulList, TabsState};
 use crate::{header_widget, section_widget, segment_widget, symbol_widget};
 
-use elf_utilities::{file};
+use elf_utilities::{file, section};
 use tui::backend::Backend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
@@ -15,9 +15,20 @@ pub struct App<'a> {
     pub sections: RefCell<StatefulList<String>>,
     pub segments: RefCell<StatefulList<String>>,
     pub symbol_table: RefCell<StatefulList<String>>,
+    pub dynamic_symbol_table: RefCell<StatefulList<String>>,
+
+    // 描画のたびにテーブルを探索すると無駄なので,
+    // ファイル読み込み時に保持してしまう.
+    symtab_sct: Option<&'a section::Section64>,
+    dynsym_sct: Option<&'a section::Section64>,
+
 }
 
 impl<'a> App<'a> {
+    pub fn state(&self) -> AppState{
+        AppState::from(self.tabs.current.as_str())
+    }
+
     /// 最も大枠のレイアウトを描画する
     pub fn draw<B: Backend>(
         &mut self,
@@ -46,12 +57,12 @@ impl<'a> App<'a> {
             );
         frame.render_widget(tabs, chunks[0]);
 
-        match self.tabs.index {
-            0 => self.draw_header_tab(frame, &elf_file, chunks[1]),
-            1 => self.draw_section_tab(frame, &elf_file, chunks[1]),
-            2 => self.draw_segment_tab(frame, &elf_file, chunks[1]),
-            3 => self.draw_symbol_tab(frame, &elf_file, chunks[1]),
-            _ => {},
+        match self.state() {
+            AppState::Header => self.draw_header_tab(frame, &elf_file, chunks[1]),
+            AppState::Section => self.draw_section_tab(frame, &elf_file, chunks[1]),
+            AppState::Segment => self.draw_segment_tab(frame, &elf_file, chunks[1]),
+            AppState::Symbol => self.draw_symbol_tab(frame, &elf_file, chunks[1], self.state()),
+            AppState::DynSym => self.draw_symbol_tab(frame, &elf_file, chunks[1], self.state()),
         }
     }
 
@@ -103,14 +114,30 @@ impl<'a> App<'a> {
         frame: &mut Frame<B>,
         elf_file: &'a file::ELF64,
         area: Rect,
+        state: AppState,
     ) {
         let chunks = self.split_list_and_detail(area);
 
-        let symbols = symbol_widget::symbol_table_list(&elf_file);
-        frame.render_stateful_widget(symbols, chunks[0], &mut self.symbol_table.borrow_mut().state);
+        match state{
+            AppState::Symbol => {
+                let symbols = symbol_widget::symbol_table_list(self.symtab_sct);
+                frame.render_stateful_widget(symbols, chunks[0], &mut self.symbol_table.borrow_mut().state);
 
-        let sym_info = symbol_widget::symbol_information(elf_file, self.symbol_table.borrow().state.selected().unwrap());
-        frame.render_widget(sym_info, chunks[1]);
+
+                let sym_info = symbol_widget::symbol_information(elf_file, self.symtab_sct.unwrap(), self.symbol_table.borrow().state.selected().unwrap());
+                frame.render_widget(sym_info, chunks[1]);
+            },
+            AppState::DynSym => {
+                let symbols = symbol_widget::symbol_table_list(self.dynsym_sct);
+                frame.render_stateful_widget(symbols, chunks[0], &mut self.dynamic_symbol_table.borrow_mut().state);
+
+
+                let sym_info = symbol_widget::symbol_information(elf_file, self.dynsym_sct.unwrap(), self.dynamic_symbol_table.borrow().state.selected().unwrap());
+                frame.render_widget(sym_info, chunks[1]);
+            },
+            _ => unreachable!(),
+        }
+
     }
     fn split_list_and_detail(&self, area: Rect) -> Vec<Rect> {
         Layout::default()
@@ -120,17 +147,77 @@ impl<'a> App<'a> {
     }
 
     pub fn new(elf_file: &'a file::ELF64) -> Self {
+        let symtab_sct = elf_file.first_section_by(|sct| sct.header.get_type() == section::TYPE::SYMTAB);
+        let dynsym_sct = elf_file.first_section_by(|sct| sct.header.get_type() == section::TYPE::DYNSYM);
+
+        let mut sections = StatefulList::with_items(section_widget::section_names(
+            elf_file,
+        ));
+        sections.next();
+
+        let mut segments = StatefulList::with_items(
+            (0..elf_file.ehdr.e_phnum).map(|n| n.to_string()).collect(),
+        );
+        segments.next();
+
+        let mut symbols = StatefulList::with_items(symbol_widget::symbol_names(symtab_sct));
+        symbols.next();
+
+        let mut dynamic_symbols = StatefulList::with_items(symbol_widget::symbol_names(dynsym_sct));
+        dynamic_symbols.next();
+
         Self {
-            tabs: TabsState::new(vec!["Header", "Sections", "Segments", "Symbols"]),
-            sections: {
-                RefCell::new(StatefulList::with_items(section_widget::section_names(
-                    elf_file,
-                )))
-            },
-            segments: RefCell::new(StatefulList::with_items(
-                (0..elf_file.ehdr.e_phnum).map(|n| n.to_string()).collect(),
-            )),
-            symbol_table: RefCell::new(StatefulList::with_items(symbol_widget::symbol_names(elf_file))),
+            tabs: create_tabs_state(elf_file, symtab_sct, dynsym_sct),
+            sections: RefCell::new(sections),
+            segments: RefCell::new(segments),
+            symbol_table: RefCell::new(symbols),
+            dynamic_symbol_table: RefCell::new(dynamic_symbols),
+            symtab_sct,
+            dynsym_sct,
+        }
+    }
+}
+
+fn create_tabs_state<'a>(
+    elf_file: &'a file::ELF64,
+    symtab_sct: Option<&'a section::Section64>,
+    dynsym_sct: Option<&'a section::Section64>
+) -> TabsState<'a>{
+    let mut state = TabsState::new(vec!["Header", "Sections"]);
+
+    if elf_file.ehdr.e_phnum != 0 {
+        state.push("Segments");
+    }
+
+    if symtab_sct.is_some(){
+        state.push("Symbols");
+    }
+    if dynsym_sct.is_some(){
+        state.push("DynSyms");
+    }
+
+    state
+}
+
+
+pub enum AppState {
+    Header,
+    Section,
+    Segment,
+    Symbol,
+    DynSym,
+}
+
+impl<'a> From<&'a str> for AppState{
+    fn from(s: &'a str) -> Self {
+        match s{
+            "Header" => AppState::Header,
+            "Sections" => AppState::Section,
+            "Segments" => AppState::Segment,
+            "Symbols" => AppState::Symbol,
+            "DynSyms" => AppState::DynSym,
+            _ => panic!("not found such a mode"),
+
         }
     }
 }

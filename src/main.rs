@@ -1,4 +1,4 @@
-use crate::tui_util::{App, Event, Events};
+use crate::tui_util::{App, Event, Events, AppState};
 use std::error::Error;
 use std::io;
 use termion::event::Key;
@@ -34,9 +34,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Application initialization
     let mut app = App::new(&elf_file);
-    app.sections.borrow_mut().previous();
-    app.segments.borrow_mut().previous();
-    app.symbol_table.borrow_mut().previous();
 
     // Main loop
     loop {
@@ -44,21 +41,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         if let Event::Input(input) = events.next()? {
             match input {
-                Key::Char('q') => {
+                Key::Char('q') | Key::Esc => {
                     break;
                 }
                 Key::Right => app.tabs.next(),
                 Key::Left => app.tabs.previous(),
-                Key::Up => match app.tabs.index {
-                    1 => app.sections.borrow_mut().previous(),
-                    2 => app.segments.borrow_mut().previous(),
-                    3 => app.symbol_table.borrow_mut().previous(),
+                Key::Up => match app.state() {
+                    AppState::Section => app.sections.borrow_mut().previous(),
+                    AppState::Segment => app.segments.borrow_mut().previous(),
+                    AppState::Symbol => app.symbol_table.borrow_mut().previous(),
+                    AppState::DynSym => app.dynamic_symbol_table.borrow_mut().previous(),
                     _ => {}
                 },
-                Key::Down => match app.tabs.index {
-                    1 => app.sections.borrow_mut().next(),
-                    2 => app.segments.borrow_mut().next(),
-                    3 => app.symbol_table.borrow_mut().next(),
+                Key::Down => match app.state() {
+                    AppState::Section => app.sections.borrow_mut().next(),
+                    AppState::Segment => app.segments.borrow_mut().next(),
+                    AppState::Symbol => app.symbol_table.borrow_mut().next(),
+                    AppState::DynSym => app.dynamic_symbol_table.borrow_mut().next(),
                     _ => {}
                 },
                 _ => {}

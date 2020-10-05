@@ -36,9 +36,9 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "elf-utilities"
-version = "0.1.67"
+version = "0.1.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd1ab896ca6329c297724a177f1173064f3e063b940184f4ba242119ea1632f"
+checksum = "b2d961446ecb2d02cf0a28769f139a1707527ae9f0174d4f0371b0b46b05276a"
 dependencies = [
  "bincode",
  "serde",
