@@ -56,35 +56,35 @@ pub fn symbol_names(symbol_table: Option<&section::Section64>) -> Vec<String> {
 
 }
 
-fn sym_type_string<'a>(sym_type: symbol::TYPE) -> &'a str {
+fn sym_type_string<'a>(sym_type: symbol::Type) -> &'a str {
     match sym_type {
-        symbol::TYPE::NOTYPE => "NOTYPE",
-        symbol::TYPE::OBJECT => "OBJECT",
-        symbol::TYPE::FUNC => "FUNC",
-        symbol::TYPE::SECTION => "SECTION",
-        symbol::TYPE::NUM => "NUM",
-        symbol::TYPE::COMMON => "COMMON",
-        symbol::TYPE::FILE => "FILE",
-        symbol::TYPE::TLS => "TLS",
+        symbol::Type::NoType => "NOTYPE",
+        symbol::Type::Object => "OBJECT",
+        symbol::Type::Func => "FUNC",
+        symbol::Type::Section => "SECTION",
+        symbol::Type::Num => "NUM",
+        symbol::Type::Common => "COMMON",
+        symbol::Type::File => "FILE",
+        symbol::Type::TLS => "TLS",
         _ => "unknown",
     }
 }
-fn sym_bind_string<'a>(sym_bind: symbol::BIND) -> &'a str {
+fn sym_bind_string<'a>(sym_bind: symbol::Bind) -> &'a str {
     match sym_bind {
-        symbol::BIND::LOCAL => "LOCAL",
-        symbol::BIND::GLOBAL => "GLOBAL",
-        symbol::BIND::WEAK => "WEAK",
-        symbol::BIND::NUM => "NUM",
-        symbol::BIND::GNUUNIQUE => "UNIQUE",
+        symbol::Bind::Local => "LOCAL",
+        symbol::Bind::Global => "GLOBAL",
+        symbol::Bind::Weak => "WEAK",
+        symbol::Bind::Num => "NUM",
+        symbol::Bind::GNUUnique => "UNIQUE",
         _ => "unknown",
     }
 }
-fn sym_vis_string<'a>(sym_vis: symbol::VISIBILITY) -> &'a str {
+fn sym_vis_string<'a>(sym_vis: symbol::Visibility) -> &'a str {
     match sym_vis {
-        symbol::VISIBILITY::DEFAULT => "DEFAULT",
-        symbol::VISIBILITY::HIDDEN => "HIDDEN",
-        symbol::VISIBILITY::INTERNAL => "INTERNAL",
-        symbol::VISIBILITY::PROTECTED => "PROTECTED",
+        symbol::Visibility::Default => "DEFAULT",
+        symbol::Visibility::Hidden => "HIDDEN",
+        symbol::Visibility::Internal => "INTERNAL",
+        symbol::Visibility::Protected => "PROTECTED",
         _ => "unknown",
     }
 }

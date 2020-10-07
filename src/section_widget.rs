@@ -38,11 +38,11 @@ pub fn section_information<'a>(
     sct: &'a section::Section64,
 ) -> Paragraph<'a> {
     let sct_info = match sct.header.get_type() {
-        section::TYPE::DYNAMIC => dynamic_info(elf_file, sct),
-        section::TYPE::HASH | section::TYPE::SYMTABSHNDX => hash_info(elf_file, sct),
-        section::TYPE::SYMTAB | section::TYPE::DYNSYM => symtab_info(elf_file, sct),
-        section::TYPE::GROUP => group_info(elf_file, sct),
-        section::TYPE::REL | section::TYPE::RELA => relocation_info(elf_file, sct),
+        section::Type::Dynamic => dynamic_info(elf_file, sct),
+        section::Type::Hash | section::Type::SymTabShNdx => hash_info(elf_file, sct),
+        section::Type::SymTab | section::Type::DynSym => symtab_info(elf_file, sct),
+        section::Type::Group => group_info(elf_file, sct),
+        section::Type::Rel | section::Type::Rela => relocation_info(elf_file, sct),
         _ => common_section_info(sct),
     };
 
@@ -192,25 +192,25 @@ fn section_attribute_spans<'a, T>(
     ])
 }
 
-fn sct_type_string<'a>(sct_type: section::TYPE) -> &'a str {
+fn sct_type_string<'a>(sct_type: section::Type) -> &'a str {
     match sct_type {
-        section::TYPE::NULL => "NULL",
-        section::TYPE::PROGBITS => "PROGBITS",
-        section::TYPE::SYMTAB => "SYMTAB",
-        section::TYPE::STRTAB => "STRTAB",
-        section::TYPE::RELA => "RELA",
-        section::TYPE::REL => "REL",
-        section::TYPE::HASH => "HASH",
-        section::TYPE::DYNAMIC => "DYNAMIC",
-        section::TYPE::NOTE => "NOTE",
-        section::TYPE::NOBITS => "NOBITS",
-        section::TYPE::SHLIB => "SHLIB",
-        section::TYPE::DYNSYM => "DYNSYM",
-        section::TYPE::INITARRAY => "INIT_ARRAY",
-        section::TYPE::FINIARRAY => "FINI_ARRAY",
-        section::TYPE::PREINITARRAY => "PREINIT_ARRAY",
-        section::TYPE::GROUP => "GROUP",
-        section::TYPE::SYMTABSHNDX => "SYMTAB SECTION INDEX",
+        section::Type::Num => "NULL",
+        section::Type::ProgBits => "PROGBITS",
+        section::Type::SymTab => "SYMTAB",
+        section::Type::StrTab => "STRTAB",
+        section::Type::Rela => "RELA",
+        section::Type::Rel => "REL",
+        section::Type::Hash => "HASH",
+        section::Type::Dynamic => "DYNAMIC",
+        section::Type::Note => "NOTE",
+        section::Type::NoBits => "NOBITS",
+        section::Type::ShLib => "SHLIB",
+        section::Type::DynSym => "DYNSYM",
+        section::Type::InitArray => "INIT_ARRAY",
+        section::Type::FiniArray => "FINI_ARRAY",
+        section::Type::PreInitArray => "PREINIT_ARRAY",
+        section::Type::Group => "GROUP",
+        section::Type::SymTabShNdx => "SYMTAB SECTION INDEX",
         _ => "unknown",
     }
 }

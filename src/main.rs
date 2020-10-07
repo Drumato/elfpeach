@@ -13,6 +13,7 @@ mod section_widget;
 mod segment_widget;
 mod tui_util;
 mod symbol_widget;
+mod dynamic_widget;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
@@ -47,18 +48,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Key::Right => app.tabs.next(),
                 Key::Left => app.tabs.previous(),
                 Key::Up => match app.state() {
+                    AppState::Header => {},
                     AppState::Section => app.sections.borrow_mut().previous(),
                     AppState::Segment => app.segments.borrow_mut().previous(),
                     AppState::Symbol => app.symbol_table.borrow_mut().previous(),
                     AppState::DynSym => app.dynamic_symbol_table.borrow_mut().previous(),
-                    _ => {}
+                    AppState::Dynamics => app.dynamic_table.borrow_mut().previous(),
                 },
                 Key::Down => match app.state() {
+                    AppState::Header => {},
                     AppState::Section => app.sections.borrow_mut().next(),
                     AppState::Segment => app.segments.borrow_mut().next(),
                     AppState::Symbol => app.symbol_table.borrow_mut().next(),
                     AppState::DynSym => app.dynamic_symbol_table.borrow_mut().next(),
-                    _ => {}
+                    AppState::Dynamics => app.dynamic_table.borrow_mut().next(),
                 },
                 _ => {}
             }

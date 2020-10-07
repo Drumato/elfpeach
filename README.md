@@ -13,7 +13,9 @@ An TUI based elf analyzer
   - [ ] hexdump
 - [x] program header table
 - [x] symbols
-- [ ] dymanic information
+- [x] dymanic information
+  - [ ] each dynamic information
+    - ex. shared library name
 - [ ] relocation symbols
 - [ ] Filter by attribute
 

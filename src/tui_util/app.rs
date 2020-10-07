@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use crate::tui_util::{StatefulList, TabsState};
-use crate::{header_widget, section_widget, segment_widget, symbol_widget};
+use crate::{header_widget, section_widget, segment_widget, dynamic_widget, symbol_widget};
 
 use elf_utilities::{file, section};
 use tui::backend::Backend;
@@ -16,11 +16,13 @@ pub struct App<'a> {
     pub segments: RefCell<StatefulList<String>>,
     pub symbol_table: RefCell<StatefulList<String>>,
     pub dynamic_symbol_table: RefCell<StatefulList<String>>,
+    pub dynamic_table: RefCell<StatefulList<String>>,
 
     // 描画のたびにテーブルを探索すると無駄なので,
     // ファイル読み込み時に保持してしまう.
     symtab_sct: Option<&'a section::Section64>,
     dynsym_sct: Option<&'a section::Section64>,
+    dynamic_sct: Option<&'a section::Section64>,
 
 }
 
@@ -63,6 +65,7 @@ impl<'a> App<'a> {
             AppState::Segment => self.draw_segment_tab(frame, &elf_file, chunks[1]),
             AppState::Symbol => self.draw_symbol_tab(frame, &elf_file, chunks[1], self.state()),
             AppState::DynSym => self.draw_symbol_tab(frame, &elf_file, chunks[1], self.state()),
+            AppState::Dynamics => self.draw_dynamic_tab(frame, &elf_file, chunks[1]),
         }
     }
 
@@ -139,6 +142,20 @@ impl<'a> App<'a> {
         }
 
     }
+    fn draw_dynamic_tab<B: Backend>(
+        &mut self,
+        frame: &mut Frame<B>,
+        elf_file: &'a file::ELF64,
+        area: Rect,
+    ) {
+        let chunks = self.split_list_and_detail(area);
+
+        let dynamics = dynamic_widget::dynamic_list(self.dynamic_sct);
+        frame.render_stateful_widget(dynamics, chunks[0], &mut self.dynamic_table.borrow_mut().state);
+
+        let dyn_info = dynamic_widget::dynamic_information(elf_file, self.dynamic_sct.unwrap(), self.dynamic_table.borrow().state.selected().unwrap());
+        frame.render_widget(dyn_info, chunks[1]);
+    }
     fn split_list_and_detail(&self, area: Rect) -> Vec<Rect> {
         Layout::default()
             .direction(Direction::Horizontal)
@@ -147,8 +164,9 @@ impl<'a> App<'a> {
     }
 
     pub fn new(elf_file: &'a file::ELF64) -> Self {
-        let symtab_sct = elf_file.first_section_by(|sct| sct.header.get_type() == section::TYPE::SYMTAB);
-        let dynsym_sct = elf_file.first_section_by(|sct| sct.header.get_type() == section::TYPE::DYNSYM);
+        let symtab_sct = elf_file.first_section_by(|sct| sct.header.get_type() == section::Type::SymTab);
+        let dynsym_sct = elf_file.first_section_by(|sct| sct.header.get_type() == section::Type::DynSym);
+        let dynamic_sct = elf_file.first_section_by(|sct|sct.header.get_type() == section::Type::Dynamic);
 
         let mut sections = StatefulList::with_items(section_widget::section_names(
             elf_file,
@@ -166,14 +184,19 @@ impl<'a> App<'a> {
         let mut dynamic_symbols = StatefulList::with_items(symbol_widget::symbol_names(dynsym_sct));
         dynamic_symbols.next();
 
+        let mut dynamics = StatefulList::with_items(dynamic_widget::dynamic_names(dynamic_sct));
+        dynamics.next();
+
         Self {
-            tabs: create_tabs_state(elf_file, symtab_sct, dynsym_sct),
+            tabs: create_tabs_state(elf_file, symtab_sct, dynsym_sct, dynamic_sct),
             sections: RefCell::new(sections),
             segments: RefCell::new(segments),
             symbol_table: RefCell::new(symbols),
             dynamic_symbol_table: RefCell::new(dynamic_symbols),
+            dynamic_table: RefCell::new(dynamics),
             symtab_sct,
             dynsym_sct,
+            dynamic_sct,
         }
     }
 }
@@ -181,7 +204,8 @@ impl<'a> App<'a> {
 fn create_tabs_state<'a>(
     elf_file: &'a file::ELF64,
     symtab_sct: Option<&'a section::Section64>,
-    dynsym_sct: Option<&'a section::Section64>
+    dynsym_sct: Option<&'a section::Section64>,
+    dynamic_sct: Option<&'a section::Section64>,
 ) -> TabsState<'a>{
     let mut state = TabsState::new(vec!["Header", "Sections"]);
 
@@ -195,6 +219,9 @@ fn create_tabs_state<'a>(
     if dynsym_sct.is_some(){
         state.push("DynSyms");
     }
+    if dynamic_sct.is_some(){
+        state.push("Dynamics");
+    }
 
     state
 }
@@ -206,6 +233,7 @@ pub enum AppState {
     Segment,
     Symbol,
     DynSym,
+    Dynamics,
 }
 
 impl<'a> From<&'a str> for AppState{
@@ -216,6 +244,7 @@ impl<'a> From<&'a str> for AppState{
             "Segments" => AppState::Segment,
             "Symbols" => AppState::Symbol,
             "DynSyms" => AppState::DynSym,
+            "Dynamics" => AppState::Dynamics,
             _ => panic!("not found such a mode"),
 
         }

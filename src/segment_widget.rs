@@ -55,20 +55,20 @@ pub fn segment_information<'a>(seg: &'a segment::Segment64) -> Paragraph<'a> {
     .block(Block::default().borders(Borders::ALL).title("Segments"))
 }
 
-fn seg_type_string<'a>(seg_type: segment::TYPE) -> &'a str {
+fn seg_type_string<'a>(seg_type: segment::Type) -> &'a str {
     match seg_type {
-        segment::TYPE::NULL => "NULL",
-        segment::TYPE::TLS => "TLS",
-        segment::TYPE::NOTE => "NOTE",
-        segment::TYPE::LOAD => "LOAD",
-        segment::TYPE::PHDR => "PHDR",
-        segment::TYPE::DYNAMIC => "DYNAMIC",
-        segment::TYPE::NUM => "NUM",
-        segment::TYPE::SHLIB => "SHLIB",
-        segment::TYPE::INTERP => "INTERP",
-        segment::TYPE::GNUEHFRAME => "GNU_EH_FRAME",
-        segment::TYPE::GNUSTACK => "GNU_STACK",
-        segment::TYPE::GNURELRO => "GNU_RELRO",
+        segment::Type::Null => "NULL",
+        segment::Type::TLS => "TLS",
+        segment::Type::Note => "NOTE",
+        segment::Type::Load => "LOAD",
+        segment::Type::Phdr => "PHDR",
+        segment::Type::Dynamic  => "DYNAMIC",
+        segment::Type::Num => "NUM",
+        segment::Type::ShLib => "SHLIB",
+        segment::Type::Interp => "INTERP",
+        segment::Type::GNUEHFrame => "GNU_EH_FRAME",
+        segment::Type::GNUStack => "GNU_STACK",
+        segment::Type::GNURelRO => "GNU_RELRO",
         _ => "unknown",
     }
 }

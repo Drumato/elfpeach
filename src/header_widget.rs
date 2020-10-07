@@ -79,59 +79,59 @@ fn header_attribute_spans<'a, T>(
     ])
 }
 
-fn elf_class_string<'a>(class: header::ELFCLASS) -> &'a str {
+fn elf_class_string<'a>(class: header::Class) -> &'a str {
     match class {
-        header::ELFCLASS::CLASS64 => "ELF64",
-        header::ELFCLASS::CLASS32 => "ELF32",
-        header::ELFCLASS::CLASSNone => "None",
+        header::Class::Bit64 => "ELF64",
+        header::Class::Bit32 => "ELF32",
+        header::Class::None => "None",
         _ => "INVALID",
     }
 }
-fn elf_data_string<'a>(data: header::ELFDATA) -> &'a str {
+fn elf_data_string<'a>(data: header::Data) -> &'a str {
     match data {
-        header::ELFDATA::DATA2LSB => "2's complement little endian",
-        header::ELFDATA::DATA2MSB => "2's complement big endian",
-        header::ELFDATA::DATA2NUM => "2's complement arch-specific:",
+        header::Data::LSB2 => "2's complement little endian",
+        header::Data::MSB2 => "2's complement big endian",
+        header::Data::Num => "2's complement arch-specific:",
         _ => "invalid data encoding",
     }
 }
-fn elf_version_string<'a>(version: header::ELFVERSION) -> &'a str {
+fn elf_version_string<'a>(version: header::Version) -> &'a str {
     match version {
-        header::ELFVERSION::VERSIONCURRENT => "1 (current)",
+        header::Version::Current => "1 (current)",
         _ => "invalid version",
     }
 }
-fn elf_osabi_string<'a>(osabi: header::ELFOSABI) -> &'a str {
+fn elf_osabi_string<'a>(osabi: header::OSABI) -> &'a str {
     match osabi {
-        header::ELFOSABI::NONE | header::ELFOSABI::SYSV => "UNIX - System V",
-        header::ELFOSABI::HPUX => "UNIX - HP-UX",
-        header::ELFOSABI::NETBSD => "UNIX - NetBSD",
-        header::ELFOSABI::GNU | header::ELFOSABI::LINUX => "UNIX - GNU",
-        header::ELFOSABI::SOLARIS => "UNIX - Solaris",
-        header::ELFOSABI::AIX => "UNIX - AIX",
-        header::ELFOSABI::IRIX => "UNIX - IRIX",
-        header::ELFOSABI::FREEBSD => "UNIX - FreeBSD",
-        header::ELFOSABI::TRU64 => "UNIX - TRU64",
-        header::ELFOSABI::MODESTO => "Novell - Modesto",
-        header::ELFOSABI::OPENBSD => "UNIX - OpenBSD",
-        header::ELFOSABI::ARM => "ARM",
-        header::ELFOSABI::STANDALONE => "STANDALONE App",
+        header::OSABI::None | header::OSABI::SysV   => "UNIX - System V",
+        header::OSABI::HPUX => "UNIX - HP-UX",
+        header::OSABI::NetBSD => "UNIX - NetBSD",
+        header::OSABI::GNU | header::OSABI::Linux => "UNIX - GNU",
+        header::OSABI::Solaris => "UNIX - Solaris",
+        header::OSABI::AIX => "UNIX - AIX",
+        header::OSABI::Irix => "UNIX - IRIX",
+        header::OSABI::FreeBSD => "UNIX - FreeBSD",
+        header::OSABI::TRU64 => "UNIX - TRU64",
+        header::OSABI::Modesto => "Novell - Modesto",
+        header::OSABI::OPENBSD => "UNIX - OpenBSD",
+        header::OSABI::Arm => "Arm",
+        header::OSABI::Standalone => "STANDALONE App",
         _ => "unsupported os/abi",
     }
 }
-fn elf_type_string<'a>(elf_type: header::ELFTYPE) -> &'a str {
+fn elf_type_string<'a>(elf_type: header::Type) -> &'a str {
     match elf_type {
-        header::ELFTYPE::CORE => "CORE (Core file)",
-        header::ELFTYPE::NONE => "NONE (None)",
-        header::ELFTYPE::DYN => "DYN (Shared object file)",
-        header::ELFTYPE::EXEC => "EXEC (Executable file)",
-        header::ELFTYPE::REL => "REL (Relocatable file)",
+        header::Type::Core => "CORE (Core file)",
+        header::Type::None => "NONE (None)",
+        header::Type::Dyn => "DYN (Shared object file)",
+        header::Type::Exec => "EXEC (Executable file)",
+        header::Type::Rel => "REL (Relocatable file)",
         _ => "unknown",
     }
 }
-fn elf_machine_string<'a>(machine: header::ELFMACHINE) -> &'a str {
+fn elf_machine_string<'a>(machine: header::Machine) -> &'a str {
     match machine {
-        header::ELFMACHINE::EMX8664 => "Advanced Micro Devices X86-64",
+        header::Machine::X8664 => "Advanced Micro Devices X86-64",
         _ => "unknown",
     }
 }
@@ -145,7 +145,7 @@ fn elf_entry_string(elf_file: &file::ELF64) -> String {
     let symbol_table = symbol_table.unwrap();
     for sym in symbol_table.symbols.as_ref().unwrap() {
         if sym.st_value == elf_file.ehdr.e_entry {
-            if sym.symbol_name.is_none() || sym.get_type() != symbol::TYPE::FUNC {
+            if sym.symbol_name.is_none() || sym.get_type() != symbol::Type::Func {
                 continue;
             }
             return format!("{} ({})", sym.symbol_name.as_ref().unwrap(), entry_point);
