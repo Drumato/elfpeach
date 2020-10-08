@@ -1,4 +1,4 @@
-use elf_utilities::{dynamic, file, section};
+use elf_utilities::{dynamic, file, section, symbol};
 use tui::layout::Corner;
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
@@ -23,6 +23,7 @@ pub fn dynamic_list(dynamic_sct: Option<&section::Section64>) -> List {
 pub fn dynamic_information<'a>(
     elf_file: &'a file::ELF64,
     dynamic_table: &'a section::Section64,
+    symbol_table: &'a section::Section64,
     dyn_idx: usize,
 ) -> Paragraph<'a> {
     let dyn_entry = &dynamic_table.dynamics.as_ref().unwrap()[dyn_idx];
@@ -39,6 +40,7 @@ pub fn dynamic_information<'a>(
         dyn_value_spans(
             elf_file,
             dynamic_table,
+            symbol_table,
             dyn_entry.get_type(),
             dyn_entry.d_un,
         ),
@@ -61,7 +63,6 @@ pub fn dynamic_names(dynamic_sct: Option<&section::Section64>) -> Vec<String> {
         .map(|idx| idx.to_string())
         .collect()
 }
-
 fn dyn_type_string<'a>(dyn_type: dynamic::EntryType) -> &'a str {
     match dyn_type {
         dynamic::EntryType::Null => "NULL",
@@ -111,6 +112,7 @@ fn dyn_type_string<'a>(dyn_type: dynamic::EntryType) -> &'a str {
 fn dyn_value_spans<'a>(
     elf_file: &'a file::ELF64,
     dynamic_table: &'a section::Section64,
+    symbol_table: &'a section::Section64,
     dyn_type: dynamic::EntryType,
     value: u64,
 ) -> Spans<'a> {
@@ -118,6 +120,25 @@ fn dyn_value_spans<'a>(
         dynamic::EntryType::Needed => (
             "Needed: ",
             dyn_library_string(elf_file, dynamic_table, value),
+        ),
+        dynamic::EntryType::VerNeed
+        | dynamic::EntryType::StrTab
+        | dynamic::EntryType::SymTab
+        | dynamic::EntryType::VerSym
+        | dynamic::EntryType::PLTGOT
+        | dynamic::EntryType::Rela
+        | dynamic::EntryType::Rel
+        | dynamic::EntryType::JmpRel
+        | dynamic::EntryType::GNUHash => {
+            ("Related Section: ", find_section_by_value(elf_file, value))
+        }
+
+        dynamic::EntryType::InitArray | dynamic::EntryType::FiniArray => {
+            ("Related Symbol: ", find_array_by_value(symbol_table, value))
+        }
+        dynamic::EntryType::Init | dynamic::EntryType::Fini => (
+            "Related Symbol: ",
+            find_symbol_by_value(symbol_table, value),
         ),
         dynamic::EntryType::Flags => (
             "Flag: ",
@@ -136,6 +157,33 @@ fn dyn_value_spans<'a>(
     };
 
     Spans::from(vec![Span::raw(attribute), Span::raw(value_string)])
+}
+
+fn find_symbol_by_value(symbol_table: &section::Section64, value: u64) -> String {
+    for sym in symbol_table.symbols.as_ref().unwrap().iter() {
+        if sym.st_value == value && sym.get_type() == symbol::Type::Func {
+            return sym.symbol_name.as_ref().unwrap().to_string();
+        }
+    }
+
+    String::from("unknown")
+}
+fn find_array_by_value(symbol_table: &section::Section64, value: u64) -> String {
+    for sym in symbol_table.symbols.as_ref().unwrap().iter() {
+        if sym.st_value == value && sym.get_type() == symbol::Type::NoType {
+            return sym.symbol_name.as_ref().unwrap().to_string();
+        }
+    }
+
+    String::from("unknown")
+}
+fn find_section_by_value(elf_file: &file::ELF64, value: u64) -> String {
+    for section in elf_file.sections.iter() {
+        if section.header.sh_addr == value {
+            return section.name.to_string();
+        }
+    }
+    String::from("unknown")
 }
 
 fn dyn_flag_string<'a>(flag: dynamic::Flag) -> &'a str {
