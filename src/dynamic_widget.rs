@@ -1,15 +1,14 @@
-use elf_utilities::{section, file,dynamic};
-use tui::widgets::{List, Block, Borders, ListItem, Paragraph};
-use tui::style::{Style, Color, Modifier};
+use elf_utilities::{dynamic, file, section};
 use tui::layout::Corner;
-use tui::text::{Spans, Span};
+use tui::style::{Color, Modifier, Style};
+use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 pub fn dynamic_list(dynamic_sct: Option<&section::Section64>) -> List {
-    let items: Vec<ListItem> = dynamic_names(dynamic_sct).iter()
-        .map(|name| ListItem::new(
-            vec![
-                Spans::from(vec![Span::raw(name.to_string())])
-            ])).collect();
+    let items: Vec<ListItem> = dynamic_names(dynamic_sct)
+        .iter()
+        .map(|name| ListItem::new(vec![Spans::from(vec![Span::raw(name.to_string())])]))
+        .collect();
 
     List::new(items)
         .block(Block::default().borders(Borders::ALL).title("Dynamics"))
@@ -29,18 +28,38 @@ pub fn dynamic_information<'a>(
     let dyn_entry = &dynamic_table.dynamics.as_ref().unwrap()[dyn_idx];
 
     Paragraph::new(vec![
-        Spans::from(vec![Span::raw("Tag: "), Span::raw(format!("0x{:x}", dyn_entry.d_tag))]),
-        Spans::from(vec![Span::raw("Type: "), Span::raw(dyn_type_string(dyn_entry.get_type()))]),
-        dyn_value_spans(elf_file, dynamic_table, dyn_entry.get_type(), dyn_entry.d_un),
-    ]).block(Block::default().borders(Borders::ALL).title("Dynamics"))
+        Spans::from(vec![
+            Span::raw("Tag: "),
+            Span::raw(format!("0x{:x}", dyn_entry.d_tag)),
+        ]),
+        Spans::from(vec![
+            Span::raw("Type: "),
+            Span::raw(dyn_type_string(dyn_entry.get_type())),
+        ]),
+        dyn_value_spans(
+            elf_file,
+            dynamic_table,
+            dyn_entry.get_type(),
+            dyn_entry.d_un,
+        ),
+    ])
+    .block(Block::default().borders(Borders::ALL).title("Dynamics"))
 }
 
 pub fn dynamic_names(dynamic_sct: Option<&section::Section64>) -> Vec<String> {
-    if dynamic_sct.is_none(){
+    if dynamic_sct.is_none() {
         return Vec::new();
     }
 
-    (0..dynamic_sct.as_ref().unwrap().dynamics.as_ref().unwrap().len()).map(|idx| idx.to_string()).collect()
+    (0..dynamic_sct
+        .as_ref()
+        .unwrap()
+        .dynamics
+        .as_ref()
+        .unwrap()
+        .len())
+        .map(|idx| idx.to_string())
+        .collect()
 }
 
 fn dyn_type_string<'a>(dyn_type: dynamic::EntryType) -> &'a str {
@@ -50,7 +69,7 @@ fn dyn_type_string<'a>(dyn_type: dynamic::EntryType) -> &'a str {
         dynamic::EntryType::PLTRelSz => "PLTRELSZ",
         dynamic::EntryType::PLTRel => "PLTREL",
         dynamic::EntryType::SymTabShNdx => "SYMTAB_SHNDX",
-        dynamic::EntryType::PreInitArray =>"PREINIT_ARRAY",
+        dynamic::EntryType::PreInitArray => "PREINIT_ARRAY",
         dynamic::EntryType::InitArray => "INIT_ARRAY",
         dynamic::EntryType::FiniArray => "FINI_ARRAY",
         dynamic::EntryType::Init => "INIT",
@@ -93,28 +112,30 @@ fn dyn_value_spans<'a>(
     elf_file: &'a file::ELF64,
     dynamic_table: &'a section::Section64,
     dyn_type: dynamic::EntryType,
-    value: u64
-) -> Spans<'a>{
-    let (attribute, value_string) =
-    match dyn_type {
-        dynamic::EntryType::Needed => ("Needed: ", dyn_library_string(elf_file, dynamic_table, value)),
-        dynamic::EntryType::Flags => ("Flag: ", dyn_flag_string(dynamic::Flag::from_def(value)).to_string()),
+    value: u64,
+) -> Spans<'a> {
+    let (attribute, value_string) = match dyn_type {
+        dynamic::EntryType::Needed => (
+            "Needed: ",
+            dyn_library_string(elf_file, dynamic_table, value),
+        ),
+        dynamic::EntryType::Flags => (
+            "Flag: ",
+            dyn_flag_string(dynamic::Flag::from_def(value)).to_string(),
+        ),
         dynamic::EntryType::Flags1 => ("Flag1:", dyn_flag1_string(value)),
         dynamic::EntryType::InitArraySz
-            | dynamic::EntryType::FiniArraySz
-            | dynamic::EntryType::PLTRelSz
-            | dynamic::EntryType::RelaSz
-            | dynamic::EntryType::StrSz
-            | dynamic::EntryType::SymEnt
-            | dynamic::EntryType::RelaEnt
-            | dynamic::EntryType::RelEnt => ("Size: ", format!("{} (bytes)", value)),
+        | dynamic::EntryType::FiniArraySz
+        | dynamic::EntryType::PLTRelSz
+        | dynamic::EntryType::RelaSz
+        | dynamic::EntryType::StrSz
+        | dynamic::EntryType::SymEnt
+        | dynamic::EntryType::RelaEnt
+        | dynamic::EntryType::RelEnt => ("Size: ", format!("{} (bytes)", value)),
         _ => ("Address: ", format!("0x{:x}", value)),
     };
 
-    Spans::from(vec![
-        Span::raw(attribute),
-        Span::raw(value_string),
-    ])
+    Spans::from(vec![Span::raw(attribute), Span::raw(value_string)])
 }
 
 fn dyn_flag_string<'a>(flag: dynamic::Flag) -> &'a str {
@@ -155,7 +176,7 @@ fn dyn_flag1_string(value: u64) -> String {
     let mut s = String::new();
 
     loop {
-        if base == 0{
+        if base == 0 {
             break;
         }
 
@@ -171,18 +192,18 @@ fn dyn_flag1_string(value: u64) -> String {
 fn dyn_library_string<'a>(
     elf_file: &'a file::ELF64,
     dynamic_table: &'a section::Section64,
-    dyn_type: dynamic::EntryType,
-    value: u64) -> String {
+    value: u64,
+) -> String {
     let table_index = dynamic_table.header.sh_link;
-    let strtab = &elf_file.sections[table_idx as usize];
+    let strtab = &elf_file.sections[table_index as usize];
     let strtab = strtab.bytes.as_ref().unwrap();
 
-    let library_name =  strtab[name_idx as usize..]
+    let library_name = strtab[value as usize..]
         .to_vec()
         .iter()
         .take_while(|byte| **byte != 0x00)
         .map(|byte| *byte)
         .collect();
 
-
+    String::from_utf8(library_name).unwrap()
 }
