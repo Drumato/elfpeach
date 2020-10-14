@@ -1,4 +1,4 @@
-use crate::tui_util::{App, Event, Events, AppState};
+use crate::tui_util::{App, AppState, Event, Events};
 use std::error::Error;
 use std::io;
 use termion::event::Key;
@@ -8,18 +8,14 @@ use termion::screen::AlternateScreen;
 use tui::backend::TermionBackend;
 use tui::Terminal;
 
-mod header_widget;
-mod section_widget;
-mod segment_widget;
 mod tui_util;
-mod symbol_widget;
-mod dynamic_widget;
+mod widgets;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() != 2 {
-        eprintln!("usage: ./peachelf <file-path>");
+        eprintln!("usage: ./elfpeach <file-path>");
         std::process::exit(1);
     }
 
@@ -48,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Key::Right => app.tabs.next(),
                 Key::Left => app.tabs.previous(),
                 Key::Up => match app.state() {
-                    AppState::Header => {},
+                    AppState::Header => {}
                     AppState::Section => app.sections.borrow_mut().previous(),
                     AppState::Segment => app.segments.borrow_mut().previous(),
                     AppState::Symbol => app.symbol_table.borrow_mut().previous(),
@@ -56,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     AppState::Dynamics => app.dynamic_table.borrow_mut().previous(),
                 },
                 Key::Down => match app.state() {
-                    AppState::Header => {},
+                    AppState::Header => {}
                     AppState::Section => app.sections.borrow_mut().next(),
                     AppState::Segment => app.segments.borrow_mut().next(),
                     AppState::Symbol => app.symbol_table.borrow_mut().next(),

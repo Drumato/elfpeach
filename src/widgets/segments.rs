@@ -1,20 +1,10 @@
+use crate::widgets::list;
 use elf_utilities::{file, segment};
-use tui::layout::Corner;
-use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 pub fn segment_list(elf_file: &file::ELF64) -> List {
-    let items = segment_items(elf_file);
-
-    List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Segments"))
-        .highlight_style(
-            Style::default()
-                .bg(Color::LightGreen)
-                .add_modifier(Modifier::BOLD),
-        )
-        .start_corner(Corner::TopLeft)
+    list("Segments", segment_items(elf_file))
 }
 
 pub fn segment_information<'a>(seg: &'a segment::Segment64) -> Paragraph<'a> {
@@ -62,7 +52,7 @@ fn seg_type_string<'a>(seg_type: segment::Type) -> &'a str {
         segment::Type::Note => "NOTE",
         segment::Type::Load => "LOAD",
         segment::Type::Phdr => "PHDR",
-        segment::Type::Dynamic  => "DYNAMIC",
+        segment::Type::Dynamic => "DYNAMIC",
         segment::Type::Num => "NUM",
         segment::Type::ShLib => "SHLIB",
         segment::Type::Interp => "INTERP",

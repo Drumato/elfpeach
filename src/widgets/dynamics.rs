@@ -1,23 +1,16 @@
+use crate::widgets::list;
 use elf_utilities::{dynamic, file, section, symbol};
-use tui::layout::Corner;
-use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 pub fn dynamic_list(dynamic_sct: Option<&section::Section64>) -> List {
-    let items: Vec<ListItem> = dynamic_names(dynamic_sct)
-        .iter()
-        .map(|name| ListItem::new(vec![Spans::from(vec![Span::raw(name.to_string())])]))
-        .collect();
-
-    List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Dynamics"))
-        .highlight_style(
-            Style::default()
-                .bg(Color::LightGreen)
-                .add_modifier(Modifier::BOLD),
-        )
-        .start_corner(Corner::TopLeft)
+    list(
+        "Dynamics",
+        dynamic_names(dynamic_sct)
+            .iter()
+            .map(|name| ListItem::new(vec![Spans::from(vec![Span::raw(name.to_string())])]))
+            .collect(),
+    )
 }
 
 pub fn dynamic_information<'a>(

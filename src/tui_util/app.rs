@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 
 use crate::tui_util::{StatefulList, TabsState};
-use crate::{dynamic_widget, header_widget, section_widget, segment_widget, symbol_widget};
+use crate::{
+    widgets::dynamics, widgets::elf_header, widgets::sections, widgets::segments, widgets::symbols,
+};
 
 use elf_utilities::{file, section};
 use tui::backend::Backend;
@@ -74,7 +76,7 @@ impl<'a> App<'a> {
         elf_file: &'a file::ELF64,
         area: Rect,
     ) {
-        let inner = header_widget::header_information(&elf_file);
+        let inner = elf_header::header_information(&elf_file);
         frame.render_widget(inner, area);
     }
     fn draw_section_tab<B: Backend>(
@@ -85,13 +87,13 @@ impl<'a> App<'a> {
     ) {
         let chunks = self.split_list_and_detail(area);
 
-        let scts = section_widget::section_list(&elf_file);
+        let scts = sections::section_list(&elf_file);
         let selected_sct = self.sections.borrow().state.selected().unwrap();
 
         frame.render_stateful_widget(scts, chunks[0], &mut self.sections.borrow_mut().state);
 
         let selected_sct = &elf_file.sections[selected_sct];
-        let sct_info = section_widget::section_information(elf_file, selected_sct);
+        let sct_info = sections::section_information(elf_file, selected_sct);
         frame.render_widget(sct_info, chunks[1]);
     }
     fn draw_segment_tab<B: Backend>(
@@ -102,13 +104,13 @@ impl<'a> App<'a> {
     ) {
         let chunks = self.split_list_and_detail(area);
 
-        let segs = segment_widget::segment_list(&elf_file);
+        let segs = segments::segment_list(&elf_file);
         let selected_seg = self.segments.borrow().state.selected().unwrap();
 
         frame.render_stateful_widget(segs, chunks[0], &mut self.segments.borrow_mut().state);
 
         let selected_seg = elf_file.segments[selected_seg];
-        let seg_info = segment_widget::segment_information(&selected_seg);
+        let seg_info = segments::segment_information(&selected_seg);
         frame.render_widget(seg_info, chunks[1]);
     }
     fn draw_symbol_tab<B: Backend>(
@@ -122,14 +124,14 @@ impl<'a> App<'a> {
 
         match state {
             AppState::Symbol => {
-                let symbols = symbol_widget::symbol_table_list(self.symtab_sct);
+                let symbols = symbols::symbol_table_list(self.symtab_sct);
                 frame.render_stateful_widget(
                     symbols,
                     chunks[0],
                     &mut self.symbol_table.borrow_mut().state,
                 );
 
-                let sym_info = symbol_widget::symbol_information(
+                let sym_info = symbols::symbol_information(
                     elf_file,
                     self.symtab_sct.unwrap(),
                     self.symbol_table.borrow().state.selected().unwrap(),
@@ -137,14 +139,14 @@ impl<'a> App<'a> {
                 frame.render_widget(sym_info, chunks[1]);
             }
             AppState::DynSym => {
-                let symbols = symbol_widget::symbol_table_list(self.dynsym_sct);
+                let symbols = symbols::symbol_table_list(self.dynsym_sct);
                 frame.render_stateful_widget(
                     symbols,
                     chunks[0],
                     &mut self.dynamic_symbol_table.borrow_mut().state,
                 );
 
-                let sym_info = symbol_widget::symbol_information(
+                let sym_info = symbols::symbol_information(
                     elf_file,
                     self.dynsym_sct.unwrap(),
                     self.dynamic_symbol_table.borrow().state.selected().unwrap(),
@@ -162,14 +164,14 @@ impl<'a> App<'a> {
     ) {
         let chunks = self.split_list_and_detail(area);
 
-        let dynamics = dynamic_widget::dynamic_list(self.dynamic_sct);
+        let dynamics = dynamics::dynamic_list(self.dynamic_sct);
         frame.render_stateful_widget(
             dynamics,
             chunks[0],
             &mut self.dynamic_table.borrow_mut().state,
         );
 
-        let dyn_info = dynamic_widget::dynamic_information(
+        let dyn_info = dynamics::dynamic_information(
             elf_file,
             self.dynamic_sct.unwrap(),
             self.symtab_sct.unwrap(),
@@ -192,20 +194,20 @@ impl<'a> App<'a> {
         let dynamic_sct =
             elf_file.first_section_by(|sct| sct.header.get_type() == section::Type::Dynamic);
 
-        let mut sections = StatefulList::with_items(section_widget::section_names(elf_file));
+        let mut sections = StatefulList::with_items(sections::section_names(elf_file));
         sections.next();
 
         let mut segments =
             StatefulList::with_items((0..elf_file.ehdr.e_phnum).map(|n| n.to_string()).collect());
         segments.next();
 
-        let mut symbols = StatefulList::with_items(symbol_widget::symbol_names(symtab_sct));
+        let mut symbols = StatefulList::with_items(symbols::symbol_names(symtab_sct));
         symbols.next();
 
-        let mut dynamic_symbols = StatefulList::with_items(symbol_widget::symbol_names(dynsym_sct));
+        let mut dynamic_symbols = StatefulList::with_items(symbols::symbol_names(dynsym_sct));
         dynamic_symbols.next();
 
-        let mut dynamics = StatefulList::with_items(dynamic_widget::dynamic_names(dynamic_sct));
+        let mut dynamics = StatefulList::with_items(dynamics::dynamic_names(dynamic_sct));
         dynamics.next();
 
         Self {

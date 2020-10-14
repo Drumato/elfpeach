@@ -1,24 +1,16 @@
-use elf_utilities::{section, file, symbol};
-use tui::widgets::{Block, List, Borders, ListItem, Paragraph};
-use tui::style::{Style, Color, Modifier};
-use tui::layout::Corner;
+use crate::widgets::list;
+use elf_utilities::{file, section, symbol};
 use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 pub fn symbol_table_list(symbol_table: Option<&section::Section64>) -> List {
-    let items: Vec<ListItem> = symbol_names(symbol_table).iter()
-            .map(|name| ListItem::new(
-                vec![
-                    Spans::from(vec![Span::raw(name.to_string())])
-                ])).collect();
-
-    List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Symbols"))
-        .highlight_style(
-            Style::default()
-                .bg(Color::LightGreen)
-                .add_modifier(Modifier::BOLD),
-        )
-        .start_corner(Corner::TopLeft)
+    list(
+        "Symbols",
+        symbol_names(symbol_table)
+            .iter()
+            .map(|name| ListItem::new(vec![Spans::from(vec![Span::raw(name.to_string())])]))
+            .collect(),
+    )
 }
 
 pub fn symbol_information<'a>(
@@ -26,18 +18,39 @@ pub fn symbol_information<'a>(
     symbol_table: &'a section::Section64,
     sym_idx: usize,
 ) -> Paragraph<'a> {
-
     let sym = &symbol_table.symbols.as_ref().unwrap()[sym_idx];
 
     Paragraph::new(vec![
-        Spans::from(vec![Span::raw("Name: "), Span::raw(sym.symbol_name.as_ref().unwrap().to_string())]),
-        Spans::from(vec![Span::raw("Value: "), Span::raw(format!("0x{:x}", sym.st_value))]),
-        Spans::from(vec![Span::raw("Size: "), Span::raw(format!("{} (bytes)", sym.st_size))]),
-        Spans::from(vec![Span::raw("Type: "), Span::raw(sym_type_string(sym.get_type()))]),
-        Spans::from(vec![Span::raw("Bind: "), Span::raw(sym_bind_string(sym.get_bind()))]),
-        Spans::from(vec![Span::raw("Visibility: "), Span::raw(sym_vis_string(sym.get_visibility()))]),
-        Spans::from(vec![Span::raw("Section: "), Span::raw(sym_ndx_string(elf_file, sym.st_shndx))]),
-    ]).block(Block::default().borders(Borders::ALL).title("Symbols"))
+        Spans::from(vec![
+            Span::raw("Name: "),
+            Span::raw(sym.symbol_name.as_ref().unwrap().to_string()),
+        ]),
+        Spans::from(vec![
+            Span::raw("Value: "),
+            Span::raw(format!("0x{:x}", sym.st_value)),
+        ]),
+        Spans::from(vec![
+            Span::raw("Size: "),
+            Span::raw(format!("{} (bytes)", sym.st_size)),
+        ]),
+        Spans::from(vec![
+            Span::raw("Type: "),
+            Span::raw(sym_type_string(sym.get_type())),
+        ]),
+        Spans::from(vec![
+            Span::raw("Bind: "),
+            Span::raw(sym_bind_string(sym.get_bind())),
+        ]),
+        Spans::from(vec![
+            Span::raw("Visibility: "),
+            Span::raw(sym_vis_string(sym.get_visibility())),
+        ]),
+        Spans::from(vec![
+            Span::raw("Section: "),
+            Span::raw(sym_ndx_string(elf_file, sym.st_shndx)),
+        ]),
+    ])
+    .block(Block::default().borders(Borders::ALL).title("Symbols"))
 }
 
 pub fn symbol_names(symbol_table: Option<&section::Section64>) -> Vec<String> {
@@ -45,15 +58,23 @@ pub fn symbol_names(symbol_table: Option<&section::Section64>) -> Vec<String> {
         return Vec::new();
     }
 
-   symbol_table.as_ref().unwrap().symbols.as_ref().unwrap().iter().enumerate().map(|(i, sym)| {
-        let name = sym.symbol_name.as_ref().unwrap().to_string();
-        if name.is_empty(){
-            format!("NO NAME SYMBOL[{}]", i)
-        } else {
-            name
-        }
-    }).collect()
-
+    symbol_table
+        .as_ref()
+        .unwrap()
+        .symbols
+        .as_ref()
+        .unwrap()
+        .iter()
+        .enumerate()
+        .map(|(i, sym)| {
+            let name = sym.symbol_name.as_ref().unwrap().to_string();
+            if name.is_empty() {
+                format!("NO NAME SYMBOL[{}]", i)
+            } else {
+                name
+            }
+        })
+        .collect()
 }
 
 fn sym_type_string<'a>(sym_type: symbol::Type) -> &'a str {
@@ -90,7 +111,7 @@ fn sym_vis_string<'a>(sym_vis: symbol::Visibility) -> &'a str {
 }
 
 fn sym_ndx_string(elf_file: &file::ELF64, ndx: u16) -> String {
-    match ndx{
+    match ndx {
         section::SHN_UNDEF => "UND".to_string(),
         section::SHN_ABS => "ABS".to_string(),
         section::SHN_COMMON => "COMMON".to_string(),

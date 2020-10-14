@@ -1,34 +1,25 @@
+use crate::widgets::list;
 use elf_utilities::{file, section};
-use tui::layout::Corner;
-use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 pub fn section_list(elf_file: &file::ELF64) -> List {
-    let items = section_items(elf_file);
-
-    List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Sections"))
-        .highlight_style(
-            Style::default()
-                .bg(Color::LightGreen)
-                .add_modifier(Modifier::BOLD),
-        )
-        .start_corner(Corner::TopLeft)
+    list("Sections", section_items(&elf_file))
 }
 
 pub fn section_names(elf_file: &file::ELF64) -> Vec<String> {
-    let names=  elf_file
+    let names = elf_file
         .sections
         .iter()
         .enumerate()
-        .map(|(i, sct)|
-            if sct.name.is_empty(){
+        .map(|(i, sct)| {
+            if sct.name.is_empty() {
                 format!("NO NAME SECTION{}", i)
             } else {
                 sct.name.to_string()
             }
-        ).collect();
+        })
+        .collect();
 
     names
 }
