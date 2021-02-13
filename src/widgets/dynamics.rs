@@ -1,5 +1,9 @@
 use crate::widgets::list;
-use elf_utilities::{dynamic, file, section, symbol};
+use elf_utilities::{
+    dynamic, file,
+    section::{self, Contents64},
+    symbol,
+};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
@@ -19,26 +23,30 @@ pub fn dynamic_information<'a>(
     symbol_table: &'a section::Section64,
     dyn_idx: usize,
 ) -> Paragraph<'a> {
-    let dyn_entry = &dynamic_table.dynamics.as_ref().unwrap()[dyn_idx];
+    if let Contents64::Dynamics(dynamics) = &dynamic_table.contents {
+        let dyn_entry = &dynamics[dyn_idx];
 
-    Paragraph::new(vec![
-        Spans::from(vec![
-            Span::raw("Tag: "),
-            Span::raw(format!("0x{:x}", dyn_entry.d_tag)),
-        ]),
-        Spans::from(vec![
-            Span::raw("Type: "),
-            Span::raw(dyn_type_string(dyn_entry.get_type())),
-        ]),
-        dyn_value_spans(
-            elf_file,
-            dynamic_table,
-            symbol_table,
-            dyn_entry.get_type(),
-            dyn_entry.d_un,
-        ),
-    ])
-    .block(Block::default().borders(Borders::ALL).title("Dynamics"))
+        Paragraph::new(vec![
+            Spans::from(vec![
+                Span::raw("Tag: "),
+                Span::raw(format!("0x{:x}", dyn_entry.d_tag)),
+            ]),
+            Spans::from(vec![
+                Span::raw("Type: "),
+                Span::raw(dyn_type_string(dyn_entry.get_type())),
+            ]),
+            dyn_value_spans(
+                elf_file,
+                dynamic_table,
+                symbol_table,
+                dyn_entry.get_type(),
+                dyn_entry.d_un,
+            ),
+        ])
+        .block(Block::default().borders(Borders::ALL).title("Dynamics"))
+    } else {
+        unreachable!()
+    }
 }
 
 pub fn dynamic_names(dynamic_sct: Option<&section::Section64>) -> Vec<String> {
@@ -46,15 +54,11 @@ pub fn dynamic_names(dynamic_sct: Option<&section::Section64>) -> Vec<String> {
         return Vec::new();
     }
 
-    (0..dynamic_sct
-        .as_ref()
-        .unwrap()
-        .dynamics
-        .as_ref()
-        .unwrap()
-        .len())
-        .map(|idx| idx.to_string())
-        .collect()
+    if let Contents64::Dynamics(dynamics) = &dynamic_sct.as_ref().unwrap().contents {
+        (0..dynamics.len()).map(|idx| idx.to_string()).collect()
+    } else {
+        unreachable!()
+    }
 }
 fn dyn_type_string<'a>(dyn_type: dynamic::EntryType) -> &'a str {
     match dyn_type {
@@ -153,18 +157,22 @@ fn dyn_value_spans<'a>(
 }
 
 fn find_symbol_by_value(symbol_table: &section::Section64, value: u64) -> String {
-    for sym in symbol_table.symbols.as_ref().unwrap().iter() {
-        if sym.st_value == value && sym.get_type() == symbol::Type::Func {
-            return sym.symbol_name.as_ref().unwrap().to_string();
+    if let Contents64::Symbols(symbols) = &symbol_table.contents {
+        for sym in symbols.iter() {
+            if sym.st_value == value && sym.get_type() == symbol::Type::NoType {
+                return sym.symbol_name.as_ref().unwrap().to_string();
+            }
         }
     }
 
     String::from("unknown")
 }
 fn find_array_by_value(symbol_table: &section::Section64, value: u64) -> String {
-    for sym in symbol_table.symbols.as_ref().unwrap().iter() {
-        if sym.st_value == value && sym.get_type() == symbol::Type::NoType {
-            return sym.symbol_name.as_ref().unwrap().to_string();
+    if let Contents64::Symbols(symbols) = &symbol_table.contents {
+        for sym in symbols.iter() {
+            if sym.st_value == value && sym.get_type() == symbol::Type::NoType {
+                return sym.symbol_name.as_ref().unwrap().to_string();
+            }
         }
     }
 
@@ -237,14 +245,17 @@ fn dyn_library_string<'a>(
 ) -> String {
     let table_index = dynamic_table.header.sh_link;
     let strtab = &elf_file.sections[table_index as usize];
-    let strtab = strtab.bytes.as_ref().unwrap();
 
-    let library_name = strtab[value as usize..]
-        .to_vec()
-        .iter()
-        .take_while(|byte| **byte != 0x00)
-        .map(|byte| *byte)
-        .collect();
+    if let Contents64::Raw(bytes) = &strtab.contents {
+        let library_name = bytes[value as usize..]
+            .to_vec()
+            .iter()
+            .take_while(|byte| **byte != 0x00)
+            .map(|byte| *byte)
+            .collect();
 
-    String::from_utf8(library_name).unwrap()
+        String::from_utf8(library_name).unwrap()
+    } else {
+        unreachable!()
+    }
 }

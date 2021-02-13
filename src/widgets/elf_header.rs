@@ -1,7 +1,7 @@
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Paragraph};
 
-use elf_utilities::{file, header, symbol};
+use elf_utilities::{file, header, section::Contents64, symbol};
 
 pub fn header_information(elf_file: &file::ELF64) -> Paragraph {
     Paragraph::new(vec![
@@ -103,7 +103,7 @@ fn elf_version_string<'a>(version: header::Version) -> &'a str {
 }
 fn elf_osabi_string<'a>(osabi: header::OSABI) -> &'a str {
     match osabi {
-        header::OSABI::None | header::OSABI::SysV   => "UNIX - System V",
+        header::OSABI::None | header::OSABI::SysV => "UNIX - System V",
         header::OSABI::HPUX => "UNIX - HP-UX",
         header::OSABI::NetBSD => "UNIX - NetBSD",
         header::OSABI::GNU | header::OSABI::Linux => "UNIX - GNU",
@@ -143,12 +143,14 @@ fn elf_entry_string(elf_file: &file::ELF64) -> String {
     }
 
     let symbol_table = symbol_table.unwrap();
-    for sym in symbol_table.symbols.as_ref().unwrap() {
-        if sym.st_value == elf_file.ehdr.e_entry {
-            if sym.symbol_name.is_none() || sym.get_type() != symbol::Type::Func {
-                continue;
+    if let Contents64::Symbols(symbols) = &symbol_table.contents {
+        for sym in symbols {
+            if sym.st_value == elf_file.ehdr.e_entry {
+                if sym.symbol_name.is_none() || sym.get_type() != symbol::Type::Func {
+                    continue;
+                }
+                return format!("{} ({})", sym.symbol_name.as_ref().unwrap(), entry_point);
             }
-            return format!("{} ({})", sym.symbol_name.as_ref().unwrap(), entry_point);
         }
     }
 

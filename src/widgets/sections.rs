@@ -1,5 +1,8 @@
 use crate::widgets::list;
-use elf_utilities::{file, section};
+use elf_utilities::{
+    file,
+    section::{self, Contents64},
+};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
@@ -142,33 +145,39 @@ fn relocation_info<'a>(elf_file: &'a file::ELF64, sct: &'a section::Section64) -
 fn group_info<'a>(elf_file: &'a file::ELF64, sct: &'a section::Section64) -> Vec<Spans<'a>> {
     let mut base_info = common_section_info(sct);
     let symtab_sct = &elf_file.sections[sct.header.sh_link as usize];
-    let signature_sym = &symtab_sct.symbols.as_ref().unwrap()[sct.header.sh_info as usize];
-    let signature_sym_name = signature_sym.symbol_name.as_ref().unwrap();
+    if let Contents64::Symbols(symbols) = &symtab_sct.contents {
+        let signature_sym = &symbols[sct.header.sh_info as usize];
+        let signature_sym_name = signature_sym.symbol_name.as_ref().unwrap();
 
-    base_info.push(Spans::from(vec![
-        Span::raw("Related Symbol Table(from sh_link): "),
-        Span::raw(&symtab_sct.name),
-    ]));
-
-    if sct.header.sh_flags & section::SHF_INFO_LINK != 0 {
         base_info.push(Spans::from(vec![
-            Span::raw("Section Group Signature (from sh_info): "),
-            Span::raw(signature_sym_name),
+            Span::raw("Related Symbol Table(from sh_link): "),
+            Span::raw(&symtab_sct.name),
         ]));
+
+        if sct.header.sh_flags & section::SHF_INFO_LINK != 0 {
+            base_info.push(Spans::from(vec![
+                Span::raw("Section Group Signature (from sh_info): "),
+                Span::raw(signature_sym_name),
+            ]));
+        }
+    } else {
+        unreachable!()
     }
 
     base_info
 }
 
 fn get_first_globsym_name_from_sh_info<'a>(symtab_sct: &'a section::Section64) -> &'a str {
-    assert!(symtab_sct.symbols.is_some());
+    if let Contents64::Symbols(symbols) = &symtab_sct.contents {
+        let first_sym = &symbols[symtab_sct.header.sh_info as usize];
+        let first_sym_name = &first_sym.symbol_name;
 
-    let first_sym = &symtab_sct.symbols.as_ref().unwrap()[symtab_sct.header.sh_info as usize];
-    let first_sym_name = &first_sym.symbol_name;
+        assert!(first_sym_name.is_some());
 
-    assert!(first_sym_name.is_some());
-
-    first_sym_name.as_ref().unwrap()
+        first_sym_name.as_ref().unwrap()
+    } else {
+        unreachable!()
+    }
 }
 
 fn section_attribute_spans<'a, T>(
