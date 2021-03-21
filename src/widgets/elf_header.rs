@@ -146,10 +146,10 @@ fn elf_entry_string(elf_file: &file::ELF64) -> String {
     if let Contents64::Symbols(symbols) = &symbol_table.contents {
         for sym in symbols {
             if sym.st_value == elf_file.ehdr.e_entry {
-                if sym.symbol_name.is_none() || sym.get_type() != symbol::Type::Func {
+                if sym.get_type() != symbol::Type::Func {
                     continue;
                 }
-                return format!("{} ({})", sym.symbol_name.as_ref().unwrap(), entry_point);
+                return format!("{} ({})", sym.symbol_name, entry_point);
             }
         }
     }

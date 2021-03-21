@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         std::process::exit(1);
     }
 
-    let elf_file = elf_utilities::parser::read_elf64(&args[1])?;
+    let elf_file = elf_utilities::parser::parse_elf64(&args[1])?;
     let events = Events::new();
 
     // Terminal initialization

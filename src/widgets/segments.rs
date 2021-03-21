@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::widgets::list;
 use elf_utilities::{file, segment};
 use tui::text::{Span, Spans};
@@ -35,7 +37,7 @@ pub fn segment_information<'a>(seg: &'a segment::Segment64) -> Paragraph<'a> {
         ]),
         Spans::from(vec![
             Span::raw("Flags: "),
-            Span::raw(seg_flag_string(seg.header.p_flags)),
+            Span::raw(seg_flag_string(seg.header.get_flags())),
         ]),
         Spans::from(vec![
             Span::raw("Align: "),
@@ -62,15 +64,15 @@ fn seg_type_string<'a>(seg_type: segment::Type) -> &'a str {
         _ => "unknown",
     }
 }
-fn seg_flag_string(seg_flag: u32) -> String {
-    let write_str_with = |s: &mut String, c: char, const_flag: u32| {
-        s.push(if seg_flag & const_flag != 0 { c } else { ' ' });
+fn seg_flag_string(flags: HashSet<segment::Flag>) -> String {
+    let write_str_with = |s: &mut String, c: char, const_flag: segment::Flag| {
+        s.push(if flags.contains(&const_flag) { c } else { ' ' });
     };
     let mut s = String::new();
 
-    write_str_with(&mut s, 'R', segment::PF_R);
-    write_str_with(&mut s, 'W', segment::PF_W);
-    write_str_with(&mut s, 'E', segment::PF_X);
+    write_str_with(&mut s, 'R', segment::Flag::R);
+    write_str_with(&mut s, 'W', segment::Flag::W);
+    write_str_with(&mut s, 'E', segment::Flag::X);
 
     s
 }

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::widgets::list;
 use elf_utilities::{
     file,
@@ -65,7 +67,7 @@ fn common_section_info(sct: &section::Section64) -> Vec<Spans> {
         ]),
         Spans::from(vec![
             Span::raw("Flags: "),
-            Span::raw(sct_flag_string(sct.header.sh_flags)),
+            Span::raw(sct_flag_string(sct.header.get_flags())),
         ]),
         Spans::from(vec![
             Span::raw("Link: "),
@@ -133,13 +135,12 @@ fn relocation_info<'a>(elf_file: &'a file::ELF64, sct: &'a section::Section64) -
         Span::raw(&symtab_sct.name),
     ]));
 
-    if sct.header.sh_flags & section::SHF_INFO_LINK != 0 {
+    if sct.header.get_flags().contains(&section::Flag::InfoLink) {
         base_info.push(Spans::from(vec![
             Span::raw("Relocation Target Section (from sh_info): "),
             Span::raw(&reloc_sct.name),
         ]));
     }
-
     base_info
 }
 fn group_info<'a>(elf_file: &'a file::ELF64, sct: &'a section::Section64) -> Vec<Spans<'a>> {
@@ -147,14 +148,14 @@ fn group_info<'a>(elf_file: &'a file::ELF64, sct: &'a section::Section64) -> Vec
     let symtab_sct = &elf_file.sections[sct.header.sh_link as usize];
     if let Contents64::Symbols(symbols) = &symtab_sct.contents {
         let signature_sym = &symbols[sct.header.sh_info as usize];
-        let signature_sym_name = signature_sym.symbol_name.as_ref().unwrap();
+        let signature_sym_name = signature_sym.symbol_name.clone();
 
         base_info.push(Spans::from(vec![
             Span::raw("Related Symbol Table(from sh_link): "),
             Span::raw(&symtab_sct.name),
         ]));
 
-        if sct.header.sh_flags & section::SHF_INFO_LINK != 0 {
+        if sct.header.get_flags().contains(&section::Flag::InfoLink) {
             base_info.push(Spans::from(vec![
                 Span::raw("Section Group Signature (from sh_info): "),
                 Span::raw(signature_sym_name),
@@ -170,11 +171,7 @@ fn group_info<'a>(elf_file: &'a file::ELF64, sct: &'a section::Section64) -> Vec
 fn get_first_globsym_name_from_sh_info<'a>(symtab_sct: &'a section::Section64) -> &'a str {
     if let Contents64::Symbols(symbols) = &symtab_sct.contents {
         let first_sym = &symbols[symtab_sct.header.sh_info as usize];
-        let first_sym_name = &first_sym.symbol_name;
-
-        assert!(first_sym_name.is_some());
-
-        first_sym_name.as_ref().unwrap()
+        &first_sym.symbol_name
     } else {
         unreachable!()
     }
@@ -214,17 +211,17 @@ fn sct_type_string<'a>(sct_type: section::Type) -> &'a str {
         _ => "unknown",
     }
 }
-fn sct_flag_string(sct_flag: u64) -> String {
-    let write_str_with = |s: &mut String, c: char, const_flag: u64| {
-        if sct_flag & const_flag != 0 {
+fn sct_flag_string(flags: HashSet<section::Flag>) -> String {
+    let write_str_with = |s: &mut String, c: char, const_flag: section::Flag| {
+        if flags.contains(&const_flag) {
             s.push(c);
         }
     };
     let mut s = String::new();
 
-    write_str_with(&mut s, 'A', section::SHF_ALLOC);
-    write_str_with(&mut s, 'X', section::SHF_EXECINSTR);
-    write_str_with(&mut s, 'I', section::SHF_INFO_LINK);
+    write_str_with(&mut s, 'A', section::Flag::Alloc);
+    write_str_with(&mut s, 'X', section::Flag::ExecInstr);
+    write_str_with(&mut s, 'I', section::Flag::InfoLink);
 
     s
 }

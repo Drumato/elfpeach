@@ -28,7 +28,7 @@ pub fn symbol_information<'a>(
         Paragraph::new(vec![
             Spans::from(vec![
                 Span::raw("Name: "),
-                Span::raw(sym.symbol_name.as_ref().unwrap().to_string()),
+                Span::raw(sym.symbol_name.clone()),
             ]),
             Spans::from(vec![
                 Span::raw("Value: "),
@@ -71,7 +71,7 @@ pub fn symbol_names(symbol_table: Option<&section::Section64>) -> Vec<String> {
             .iter()
             .enumerate()
             .map(|(i, sym)| {
-                let name = sym.symbol_name.as_ref().unwrap().to_string();
+                let name = sym.symbol_name.clone();
                 if name.is_empty() {
                     format!("NO NAME SYMBOL[{}]", i)
                 } else {

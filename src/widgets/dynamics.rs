@@ -160,7 +160,7 @@ fn find_symbol_by_value(symbol_table: &section::Section64, value: u64) -> String
     if let Contents64::Symbols(symbols) = &symbol_table.contents {
         for sym in symbols.iter() {
             if sym.st_value == value && sym.get_type() == symbol::Type::NoType {
-                return sym.symbol_name.as_ref().unwrap().to_string();
+                return sym.symbol_name.clone();
             }
         }
     }
@@ -171,7 +171,7 @@ fn find_array_by_value(symbol_table: &section::Section64, value: u64) -> String 
     if let Contents64::Symbols(symbols) = &symbol_table.contents {
         for sym in symbols.iter() {
             if sym.st_value == value && sym.get_type() == symbol::Type::NoType {
-                return sym.symbol_name.as_ref().unwrap().to_string();
+                return sym.symbol_name.clone();
             }
         }
     }
