@@ -11,3 +11,6 @@ tui = "0.11.0"
 termion = "1.5"
 rand = "0.7.3"
 elf-utilities = "0.2.19"
+
+[badges]
+maintenance = { status = "experimental" }
